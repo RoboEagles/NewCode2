@@ -33,7 +33,11 @@ public class MPU_6050_I2C {
 							 REGISTER_GYRO_CONFIG = 0x1B,
 							 REGISTER_ACCEL_CONFIG = 0x1C,
 							 REGISTER_TEMP = 0x41,
-							 REGISTER_SAMPLE_RATE = 0x19;
+							 REGISTER_SAMPLE_RATE = 0x19,
+							 REGISTER_INTERUPT_ENABLE = 0x38,
+							 REGSITER_INTERUPT_STATUS = 0x3A;
+	
+	private static int DATA_READY_INT = 0;
 	
 	private static final double[][] ACCEL_SENSITIVITY = {
 			{ 2. , 16384. },{ 4. , 8192. },{ 8. , 4096. },{ 16. , 2048. },
@@ -41,6 +45,7 @@ public class MPU_6050_I2C {
 	private static final double[][] GYRO_SENSITIVITY = {
 			{ 250 , 131. },{ 500. , 65.5 },{ 1000. , 32.8 },{ 2000. , 16.4 },
 	};
+
 	
 	public enum ACCEL_VALUES {
 		
@@ -69,7 +74,8 @@ public class MPU_6050_I2C {
 	private I2C MPU;
 	
 	private byte[] accelReads = new byte[6],
-					gyroReads = new byte[6];
+					gyroReads = new byte[6],
+					interruptStatus = new byte[1];
 	
 	public MPU_6050_I2C(byte deviceAddress, 
 						ACCEL_VALUES accelSensitivity, 
@@ -121,22 +127,31 @@ public class MPU_6050_I2C {
 		MPU.write(REGISTER_GYRO_CONFIG, registerGyroConfig[0]);
 		MPU.write(REGISTER_PWRMGMT_1, (byte) 0x00);
 		MPU.write(REGISTER_PWRMGMT_2, (byte) 0x00);
+		MPU.write(REGISTER_INTERUPT_ENABLE, (byte) 0x01);
 		
 		
 	}
 	
 	public MPU_6050_I2C read() {
 		
-		MPU.read(REGISTER_ACCEL, accelReads.length, accelReads);
-		MPU.read(REGISTER_GYRO, gyroReads.length, gyroReads);
+		MPU.read(REGSITER_INTERUPT_STATUS, 1, interruptStatus);
 		
-		rawAccelerometer.X = (accelReads[0] << 8) | accelReads[1];
-		rawAccelerometer.Y = (accelReads[2] << 8) | accelReads[3];
-		rawAccelerometer.Z = (accelReads[4] << 8) | accelReads[5];
+		DATA_READY_INT = interruptStatus[0];
 		
-		rawGyro.X = (gyroReads[0] << 8) | gyroReads[1];
-		rawGyro.Y = (gyroReads[2] << 8) | gyroReads[3];
-		rawGyro.Z = (gyroReads[4] << 8) | gyroReads[5];
+		if(DATA_READY_INT == 1) {
+			
+			MPU.read(REGISTER_ACCEL, accelReads.length, accelReads);
+			MPU.read(REGISTER_GYRO, gyroReads.length, gyroReads);
+			
+			rawAccelerometer.X = (accelReads[0] << 8) | accelReads[1];
+			rawAccelerometer.Y = (accelReads[2] << 8) | accelReads[3];
+			rawAccelerometer.Z = (accelReads[4] << 8) | accelReads[5];
+			
+			rawGyro.X = (gyroReads[0] << 8) | gyroReads[1];
+			rawGyro.Y = (gyroReads[2] << 8) | gyroReads[3];
+			rawGyro.Z = (gyroReads[4] << 8) | gyroReads[5];
+			
+		}
 		
 		
 		return this;
