@@ -140,7 +140,7 @@ public class Measurement extends Subsystem {
     			sumY = 0.,
     			sumZ = 0.;
     	
-    	for(int i = 0; i <= calibrationIterations; i++) {
+    	for(int i = 0; i < calibrationIterations; i++) {   //...<= should be <....
     		
     		mpu.read();
     		
@@ -166,13 +166,13 @@ public class Measurement extends Subsystem {
     	
     	double sum = 0.;
     	
-    	for(int i = 0; i <= calibrationIterations; i++) {
+    	for(int i = 0; i < calibrationIterations; i++) {  //...<= should be just <...
     		
     		sum += mpu.read().getGyro().Z;
     		
     	}
     	
-    	gyroOffset = sum / calibrationIterations;
+    	gyroOffset = sum / (double) calibrationIterations;
     	
     	System.out.println("***** Gyro Calibrated:   Z-OFFSET: " + gyroOffset);
     	
