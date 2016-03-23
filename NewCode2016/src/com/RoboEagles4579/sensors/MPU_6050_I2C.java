@@ -156,14 +156,14 @@ public class MPU_6050_I2C {
 				
 			}
 			
-			for(int i = accelReads.length; i < tempBuff.length; i++) {
+			for(int i = accelReads.length; i < (tempBuff.length + accelReads.length); i++) {
 				
 				tempBuff[i] = READS[n];
 				n++;
 				
 			}
 			
-			for(int i = (accelReads.length + tempBuff.length); i < gyroReads.length; i++) {
+			for(int i = (accelReads.length + tempBuff.length); i < (tempBuff.length + accelReads.length + gyroReads.length); i++) {
 				
 				gyroReads[i] = READS[i];
 				n++;
