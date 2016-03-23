@@ -52,7 +52,7 @@ public class Auto_CrossDefense extends Command {
     // Called just before this Command runs the first time
     protected void initialize() {
     	
-    	startDistance = Robot.measurement.getDistance().Y; // CHECK TO BE CERTAIN OF AXIS ORIENTATION
+    	startDistance = Robot.measurement.getDistance().X; // CHECK TO BE CERTAIN OF AXIS ORIENTATION
     	target_Distance = startDistance + target_ChangeInDistance;
     	
     }
@@ -66,7 +66,9 @@ public class Auto_CrossDefense extends Command {
 
     // Make this return true when this Command no longer needs to run execute()
     protected boolean isFinished() {
-        return target_Distance < Robot.measurement.getDistance().Y;
+        return target_Distance < Robot.measurement.getDistance().X;
+        //true if target distance is smaller than the current distance
+        //
     }
 
     // Called once after isFinished returns true

@@ -182,7 +182,7 @@ public class Measurement extends Subsystem {
     	
     	//Reset to zero
     	
-    	ultrasonicDistance = 0.;
+    	ultrasonicDistance = 0.0;
     	
     	
     }

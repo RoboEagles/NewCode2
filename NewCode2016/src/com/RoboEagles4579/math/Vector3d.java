@@ -58,5 +58,15 @@ public class Vector3d extends Vector2d {
     	
     	return this;
     }
+
+	public Vector3d set(Vector3s val) {
+		
+		
+    	X = (double) val.X;
+    	Y = (double) val.Y;
+    	Z = (double) val.Z;
+    	
+    	return this;
+	}
     
 }

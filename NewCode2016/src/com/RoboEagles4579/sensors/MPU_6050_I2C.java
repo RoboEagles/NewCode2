@@ -3,6 +3,7 @@ package com.RoboEagles4579.sensors;
 
 import com.RoboEagles4579.math.Vector3d;
 import com.RoboEagles4579.math.Vector3i;
+import com.RoboEagles4579.math.Vector3s;
 
 import edu.wpi.first.wpilibj.I2C;
 
@@ -16,11 +17,13 @@ public class MPU_6050_I2C {
 				digitalLPFConfig = 3;
 	
 	
-	public Vector3i rawAccelerometer = new Vector3i(),
-					 rawGyro = new Vector3i();
+	public Vector3s rawAccelerometer = new Vector3s(),
+					 rawGyro = new Vector3s();
 	
 	private Vector3d accelValues = new Vector3d(),
 					 gyroValues = new Vector3d();
+	
+	private double temp = 0.;
 	
 	private double accelLSB_Sensitivity = ACCEL_SENSITIVITY[accelSensitivity][1],
 				   gyroLSB_Sensitivity = GYRO_SENSITIVITY[gyroSensitivity][1];
@@ -75,7 +78,8 @@ public class MPU_6050_I2C {
 	
 	private byte[] accelReads = new byte[6],
 					gyroReads = new byte[6],
-					interruptStatus = new byte[1];
+					interruptStatus = new byte[1],
+					tempBuff = new byte[2];
 	
 	public MPU_6050_I2C(byte deviceAddress, 
 						ACCEL_VALUES accelSensitivity, 
@@ -133,26 +137,30 @@ public class MPU_6050_I2C {
 	}
 	
 	public MPU_6050_I2C read() {
-		
-		MPU.read(REGSITER_INTERUPT_STATUS, 1, interruptStatus);
-		
-		DATA_READY_INT = interruptStatus[0];
-		
-		if(DATA_READY_INT == 1) {
+				
+		do {
+
+			MPU.read(REGSITER_INTERUPT_STATUS, 1, interruptStatus);
+			DATA_READY_INT = ((byte) interruptStatus[0]) & 0x01;
 			
+		} while (DATA_READY_INT == 0);
+			
+		
 			MPU.read(REGISTER_ACCEL, accelReads.length, accelReads);
 			MPU.read(REGISTER_GYRO, gyroReads.length, gyroReads);
+			MPU.read(REGISTER_TEMP, tempBuff.length, tempBuff);
 			
-			rawAccelerometer.X = (accelReads[0] << 8) | accelReads[1];
-			rawAccelerometer.Y = (accelReads[2] << 8) | accelReads[3];
-			rawAccelerometer.Z = (accelReads[4] << 8) | accelReads[5];
+			rawAccelerometer.X = (short) ((accelReads[0] << 8) | accelReads[1]);
+			rawAccelerometer.Y = (short) ((accelReads[2] << 8) | accelReads[3]);
+			rawAccelerometer.Z = (short) ((accelReads[4] << 8) | accelReads[5]);
 			
-			rawGyro.X = (gyroReads[0] << 8) | gyroReads[1];
-			rawGyro.Y = (gyroReads[2] << 8) | gyroReads[3];
-			rawGyro.Z = (gyroReads[4] << 8) | gyroReads[5];
+			rawGyro.X = (short) ((gyroReads[0] << 8) | gyroReads[1]);
+			rawGyro.Y = (short) ((gyroReads[2] << 8) | gyroReads[3]);
+			rawGyro.Z = (short) ((gyroReads[4] << 8) | gyroReads[5]);
+
+			short tempTmp = (short) ((tempBuff[0] << 8) | tempBuff[1]);
 			
-		}
-		
+			temp = (tempTmp / 340) + 36.53;
 		
 		return this;
 		
@@ -193,12 +201,7 @@ public class MPU_6050_I2C {
 	
 	public double getTemp() { // degrees Centigrade
 		
-		byte[] tempBuff = new byte[2];
-		MPU.read(REGISTER_TEMP, tempBuff.length, tempBuff);
-		
-		int temp = (tempBuff[0] << 8) | tempBuff[1];
-		
-		return (temp/340) + 36.53;
+		return temp;
 		
 	}
 

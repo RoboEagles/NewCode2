@@ -9,7 +9,7 @@ public class Vector2i {
         this.Y = y;
     }
     
-    public double magnitude() { //Returns magnitude of vector
+    public double mag() { //Returns magnitude of vector
         return Math.sqrt(X*X + Y*Y);
     }
     
