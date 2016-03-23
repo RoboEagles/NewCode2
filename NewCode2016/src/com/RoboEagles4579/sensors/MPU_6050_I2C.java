@@ -79,7 +79,8 @@ public class MPU_6050_I2C {
 	private byte[] accelReads = new byte[6],
 					gyroReads = new byte[6],
 					interruptStatus = new byte[1],
-					tempBuff = new byte[2];
+					tempBuff = new byte[2],
+					READS = new byte[14];
 	
 	public MPU_6050_I2C(byte deviceAddress, 
 						ACCEL_VALUES accelSensitivity, 
@@ -145,10 +146,25 @@ public class MPU_6050_I2C {
 			
 		} while (DATA_READY_INT == 0);
 			
-		
-			MPU.read(REGISTER_ACCEL, accelReads.length, accelReads);
-			MPU.read(REGISTER_GYRO, gyroReads.length, gyroReads);
-			MPU.read(REGISTER_TEMP, tempBuff.length, tempBuff);
+			MPU.read(REGISTER_ACCEL, READS.length, READS);
+			
+			for(int i = 0; i < accelReads.length; i++) {
+				
+				accelReads[i] = READS[i];
+				
+			}
+			
+			for(int i = accelReads.length; i < tempBuff.length; i++) {
+				
+				tempBuff[i] = READS[i];
+				
+			}
+			
+			for(int i = (accelReads.length + tempBuff.length); i < gyroReads.length; i++) {
+				
+				gyroReads[i] = READS[i];
+				
+			}
 			
 			rawAccelerometer.X = (short) ((accelReads[0] << 8) | accelReads[1]);
 			rawAccelerometer.Y = (short) ((accelReads[2] << 8) | accelReads[3]);
