@@ -2,7 +2,6 @@ package com.RoboEagles4579.sensors;
 
 
 import com.RoboEagles4579.math.Vector3d;
-import com.RoboEagles4579.math.Vector3i;
 import com.RoboEagles4579.math.Vector3s;
 
 import edu.wpi.first.wpilibj.I2C;
@@ -16,19 +15,21 @@ public class MPU_6050_I2C {
 				sampleRateDivider = 18,
 				digitalLPFConfig = 3;
 	
+	// Where the raw values from the registers will be stored
+	public Vector3s rawAccelerometer = new Vector3s(),	// Accelerometer Raw
+					 rawGyro = new Vector3s();			// Gyro Raw
 	
-	public Vector3s rawAccelerometer = new Vector3s(),
-					 rawGyro = new Vector3s();
+	private Vector3d accelValues = new Vector3d(),		// Converted, unfiltered readings for accelerometer
+					 gyroValues = new Vector3d();		// Converted, unfiltered readings for gyro
 	
-	private Vector3d accelValues = new Vector3d(),
-					 gyroValues = new Vector3d();
+	private double temp = 0.; // Current temperature value in degrees C
 	
-	private double temp = 0.;
+	private double accelLSB_Sensitivity = ACCEL_SENSITIVITY[accelSensitivity][1], // Grab default LSB sensitivity for accelerometer
+				   gyroLSB_Sensitivity = GYRO_SENSITIVITY[gyroSensitivity][1];	// Grab default LSB sensitivity for gyro
 	
-	private double accelLSB_Sensitivity = ACCEL_SENSITIVITY[accelSensitivity][1],
-				   gyroLSB_Sensitivity = GYRO_SENSITIVITY[gyroSensitivity][1];
-	
-	private static final int REGISTER_PWRMGMT_1 = 0x6B,
+	//Define registers to be used
+	@SuppressWarnings("unused")
+	private static final int REGISTER_PWRMGMT_1 = 0x6B, 
 							 REGISTER_PWRMGMT_2 = 0x6C,
 							 REGISTER_ACCEL = 0x3B,
 							 REGISTER_GYRO = 0x43,
@@ -40,16 +41,20 @@ public class MPU_6050_I2C {
 							 REGISTER_INTERUPT_ENABLE = 0x38,
 							 REGSITER_INTERUPT_STATUS = 0x3A;
 	
+	// Define data ready interrupt bit, for controlling readouts
 	private static int DATA_READY_INT = 0;
 	
+	//Array found in MPU 6050 datasheet for LSB Sensitivity
 	private static final double[][] ACCEL_SENSITIVITY = {
 			{ 2. , 16384. },{ 4. , 8192. },{ 8. , 4096. },{ 16. , 2048. },
 	};
+	
 	private static final double[][] GYRO_SENSITIVITY = {
 			{ 250 , 131. },{ 500. , 65.5 },{ 1000. , 32.8 },{ 2000. , 16.4 },
 	};
 
-	
+	// Define an enumeration for grabbing accel LSB Sensitivity from a constant
+	// "Value" refers to position in the ACCEL_SENSITIVITY array
 	public enum ACCEL_VALUES {
 		
 		k2g(0), k4g(1), k8g(2), k16g(3);
@@ -62,6 +67,8 @@ public class MPU_6050_I2C {
 		
 	}
 	
+	// Define an enumeration for grabbing accel LSB Sensitivity from a constant
+	// "Value" refers to position in the GYRO_SENSITIVITY array
 	public enum GYRO_VALUES {
 		
 		k250(0), k500(1), k1000(2), k2000(3);
@@ -74,14 +81,22 @@ public class MPU_6050_I2C {
 		
 	}
 	
+	// I2C interface for the MPU
 	private I2C MPU;
 	
-	private byte[] accelReads = new byte[6],
-					gyroReads = new byte[6],
-					interruptStatus = new byte[1],
-					tempBuff = new byte[2],
-					READS = new byte[14];
+	private byte[] accelReads = new byte[6], // Raw Byte Readinds of the Accelerometer
+					gyroReads = new byte[6], // Raw Byte Reading of the Gyro
+					interruptStatus = new byte[1], // Interrupt Status byte. Bit 0 is INT_READY
+					tempBuff = new byte[2], // Temperature raw byte read buffer
+					READS = new byte[14]; // Primary buffer for reading values
 	
+	/*
+	 * 
+	 * @param byte deviceAddress I2C device address of the MPU6050
+	 * @param ACCEL_VALUES accelSensitivity Acceleration sensitivity value k2g,k4g,k8g,k16g
+	 * @param GYRO_VALUES gyroSensitivity  Gyro (deg/s) sensitivity value k250,k500,k1000,k2000 (deg/s)
+	 * 
+	 */
 	public MPU_6050_I2C(byte deviceAddress, 
 						ACCEL_VALUES accelSensitivity, 
 						GYRO_VALUES gyroSensitivity) {
@@ -99,6 +114,11 @@ public class MPU_6050_I2C {
 		
 	}
 
+	/*
+	 * 
+	 * @param byte deviceAddress I2C device address of the MPU6050
+	 * 
+	 */
 	public MPU_6050_I2C(byte deviceAddress) {
 		
 		this(deviceAddress, ACCEL_VALUES.k4g, GYRO_VALUES.k500);
@@ -106,12 +126,18 @@ public class MPU_6050_I2C {
 		
 	}
 
+	/*
+	 * 
+	 * Uses default device address (0x68), Accel Sensitivity (k4g), and Gyro Sensitivity (k500) 
+	 * 
+	 */
 	public MPU_6050_I2C() {
 		
 		this((byte) 0x68);
 		
 	}
 	
+	// Initializes the MPU with pre-defined settings
 	private void init() {
 		
 		byte[] registerConfig = new byte[1],
@@ -137,6 +163,8 @@ public class MPU_6050_I2C {
 		
 	}
 	
+	// Called iteratively to read the MPU, 
+	// read() returns this object for object feedback (you can call .getAccel() right from the read() method 
 	public MPU_6050_I2C read() {
 				
 		do {
@@ -165,7 +193,7 @@ public class MPU_6050_I2C {
 			
 			for(int i = (accelReads.length + tempBuff.length); i < (tempBuff.length + accelReads.length + gyroReads.length); i++) {
 				
-				gyroReads[i] = READS[i];
+				gyroReads[i] = READS[n];
 				n++;
 				
 			}
@@ -185,40 +213,49 @@ public class MPU_6050_I2C {
 		return this;
 		
 	}
-
+	
+	//Returns the acceleration as a vector of double data types in Gs
 	public Vector3d getAccel() {
 		return accelValues.set(rawAccelerometer).divide(this.accelLSB_Sensitivity);
 	}
 	
+	//Returns the gyro as a vector of double data types in deg/s
 	public Vector3d getGyro() {
 		return gyroValues.set(rawGyro).divide(this.gyroLSB_Sensitivity);
 	}
 	
+	//Return the X acceleration in Gs
 	public double getAccelX() {
 		return getAccel().X;
 	}
 	
+	//Return the Y acceleration in Gs
 	public double getAccelY() {
 		return getAccel().Y;
 	}
 	
+	//Return the Z acceleration in Gs
 	public double getAccelZ() {
 		return getAccel().Z;		
 	}
 	
+	//Return the X gyro value in deg/s
 	public double getGyroX() {
 		return getGyro().X;
 	}
 	
+	//Return the Y gyro value in deg/s
 	public double getGyroY() {
 		return getGyro().Y;
 	}
 	
+	//	Return the Z gyro value in deg/s, 
+	//	this will probably be the most used axis of the three
 	public double getGyroZ() {
 		return getGyro().Z;
 	}
 	
-	
+	//	Return the temperature of the MPU in degrees C
 	public double getTemp() { // degrees Centigrade
 		
 		return temp;
