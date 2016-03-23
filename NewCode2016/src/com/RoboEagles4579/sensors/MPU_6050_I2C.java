@@ -148,21 +148,25 @@ public class MPU_6050_I2C {
 			
 			MPU.read(REGISTER_ACCEL, READS.length, READS);
 			
+			int n = 0;
 			for(int i = 0; i < accelReads.length; i++) {
 				
-				accelReads[i] = READS[i];
+				accelReads[i] = READS[n];
+				n++;
 				
 			}
 			
 			for(int i = accelReads.length; i < tempBuff.length; i++) {
 				
-				tempBuff[i] = READS[i];
+				tempBuff[i] = READS[n];
+				n++;
 				
 			}
 			
 			for(int i = (accelReads.length + tempBuff.length); i < gyroReads.length; i++) {
 				
 				gyroReads[i] = READS[i];
+				n++;
 				
 			}
 			
